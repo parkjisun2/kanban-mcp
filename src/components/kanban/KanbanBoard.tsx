@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +44,32 @@ export default function KanbanBoard() {
   >(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [hideDone, setHideDone] = useState(false);
+  // 체크 시점의 타임스탬프 — 이 시점 이전에 done된 태스크만 숨김
+  const [hideDoneSince, setHideDoneSince] = useState<string | null>(null);
+
+  // --- 클라이언트 마운트 후 localStorage에서 복원 (hydration 안전)
+  useEffect(() => {
+    const savedSince = localStorage.getItem("kanban-hide-done-since");
+    if (savedSince) {
+      setHideDone(true);
+      setHideDoneSince(savedSince);
+    }
+  }, []);
+
+  const handleHideDoneChange = useCallback((hide: boolean) => {
+    setHideDone(hide);
+    if (hide) {
+      // 체크 시점 타임스탬프 저장 — 이 시점 이전 done만 숨김
+      const now = new Date().toISOString();
+      setHideDoneSince(now);
+      localStorage.setItem("kanban-hide-done-since", now);
+    } else {
+      // 체크 해제 — 전체 보기
+      setHideDoneSince(null);
+      localStorage.removeItem("kanban-hide-done-since");
+    }
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -59,6 +85,14 @@ export default function KanbanBoard() {
         .filter((t) => {
           if (t.status !== status) return false;
           if (t.parentTaskId) return false;
+          // Done 제외: 체크 시점 이전에 done된 태스크만 숨김, 이후 done은 보임
+          if (
+            hideDone &&
+            hideDoneSince &&
+            t.status === "done" &&
+            t.updatedAt <= hideDoneSince
+          )
+            return false;
           if (
             searchQuery &&
             !t.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -69,7 +103,7 @@ export default function KanbanBoard() {
         })
         .sort((a, b) => a.position - b.position),
     }));
-  }, [tasks, searchQuery, priorityFilter]);
+  }, [tasks, searchQuery, priorityFilter, hideDone, hideDoneSince]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -171,6 +205,8 @@ export default function KanbanBoard() {
         onPriorityFilter={setPriorityFilter}
         activePriority={priorityFilter}
         projectId={activeProjectId}
+        hideDone={hideDone}
+        onHideDoneChange={handleHideDoneChange}
       />
       <DndContext
         sensors={sensors}

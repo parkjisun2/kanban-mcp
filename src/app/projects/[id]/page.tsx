@@ -8,7 +8,7 @@
 import { useEffect, use } from "react";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import LabelManager from "@/components/kanban/LabelManager";
-import { useKanbanStore } from "@/hooks/useKanbanStore";
+import { useKanbanStore, useAutoRefresh } from "@/hooks/useKanbanStore";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,6 +17,9 @@ interface PageProps {
 export default function ProjectPage({ params }: PageProps) {
   const { id } = use(params);
   const { setActiveProject, projects, fetchProjects } = useKanbanStore();
+
+  // --- AJAX 자동 폴링: 5초마다 데이터 갱신
+  useAutoRefresh(5000);
 
   useEffect(() => {
     if (projects.length === 0) {

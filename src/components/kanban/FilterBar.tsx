@@ -17,6 +17,8 @@ interface FilterBarProps {
   onPriorityFilter: (priority: string | null) => void;
   activePriority: string | null;
   projectId: string;
+  hideDone: boolean;
+  onHideDoneChange: (hide: boolean) => void;
 }
 
 export default function FilterBar({
@@ -24,6 +26,8 @@ export default function FilterBar({
   onPriorityFilter,
   activePriority,
   projectId,
+  hideDone,
+  onHideDoneChange,
 }: FilterBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -58,7 +62,7 @@ export default function FilterBar({
       </div>
 
       {/* Priority filter */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-1 items-center gap-1">
         <span className="text-xs text-muted-foreground mr-1">Priority:</span>
         {(
           Object.entries(TASK_PRIORITY_CONFIG) as [
@@ -90,6 +94,17 @@ export default function FilterBar({
             <X className="h-3 w-3" />
           </button>
         )}
+
+        {/* Done 제외 체크박스 */}
+        <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+          <input
+            type="checkbox"
+            checked={hideDone}
+            onChange={(e) => onHideDoneChange(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
+          />
+          Done 제외
+        </label>
       </div>
 
       {/* Export */}

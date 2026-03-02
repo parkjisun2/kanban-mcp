@@ -21,7 +21,7 @@ import {
   Download,
   TrendingUp,
 } from "lucide-react";
-import { useKanbanStore } from "@/hooks/useKanbanStore";
+import { useKanbanStore, useAutoRefresh } from "@/hooks/useKanbanStore";
 import { TASK_STATUS_CONFIG, TASK_PRIORITY_CONFIG } from "@/types";
 import DonutChart from "@/components/charts/DonutChart";
 import MiniBarChart from "@/components/charts/MiniBarChart";
@@ -56,6 +56,9 @@ interface AnalyticsData {
 export default function DashboardView() {
   const { dashboard, fetchDashboard, isLoading } = useKanbanStore();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+
+  // --- AJAX 자동 폴링: 5초마다 데이터 갱신
+  useAutoRefresh(5000);
 
   useEffect(() => {
     fetchDashboard();

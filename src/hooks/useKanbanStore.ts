@@ -6,6 +6,7 @@
  */
 
 import { create } from "zustand";
+import { useEffect, useRef } from "react";
 import type { TaskWithLabels, DashboardSummary } from "@/types";
 
 interface ProjectItem {
@@ -195,3 +196,29 @@ export const useKanbanStore = create<KanbanState>((set, get) => ({
     }
   },
 }));
+
+/**
+ * AJAX 자동 폴링 훅
+ * MCP에서 태스크/프로젝트가 변경되면 UI에 자동 반영된다.
+ * @param intervalMs 폴링 간격 (기본 5초)
+ */
+export function useAutoRefresh(intervalMs = 5000) {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { fetchProjects, fetchTasks, fetchDashboard, activeProjectId } =
+    useKanbanStore();
+
+  useEffect(() => {
+    // --- 5초마다 프로젝트 + 대시보드 + 활성 태스크 자동 갱신
+    intervalRef.current = setInterval(() => {
+      fetchProjects();
+      fetchDashboard();
+      if (activeProjectId) {
+        fetchTasks(activeProjectId);
+      }
+    }, intervalMs);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchProjects, fetchTasks, fetchDashboard, activeProjectId, intervalMs]);
+}
